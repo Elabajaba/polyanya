@@ -79,9 +79,13 @@ impl<'m> SearchInstance<'m> {
     ) -> Self {
         let starting_polygon = &mesh.polygons[from.1];
 
-
         let mut search_instance = SearchInstance {
-            queue: RadixHeapMap::new_at(Reverse(#[allow(unsafe_code)]unsafe { NotNan::new_unchecked(0.0) })),
+            queue: RadixHeapMap::new_at(Reverse(
+                #[allow(unsafe_code)]
+                unsafe {
+                    NotNan::new_unchecked(0.0)
+                },
+            )),
             // queue: RadixHeapMap::new(),
             node_buffer: Vec::with_capacity(10),
             root_history: HashMap::with_capacity(10),
@@ -106,7 +110,6 @@ impl<'m> SearchInstance<'m> {
             #[cfg(debug_assertions)]
             fail_fast: -1,
         };
-
 
         search_instance.root_history.insert(Root(from.0), 0.0);
 
@@ -482,84 +485,13 @@ impl<'m> SearchInstance<'m> {
             println!("        pushing: {}", new_node);
         }
 
-        // println!("-----------------------------------------------------------------------------------------------------------------------------------");
-
         self.node_buffer.sort_unstable();
 
-        // println!("node buffer -------------------------");
-        // println!("top: {}", top);
-        // println!("{:?}", self.node_buffer);
-
-        for next in self.node_buffer.drain(..).rev() {
-            // self.node_buffer.drain(..).for_each(|next| {
-            // println!("top: {:?}", self.queue.top());
-            // println!("(f, g): ({}, {})", next.f, next.g);
-
-            let val = next.f;
-
-            // let val = if next.f == next.g {
-            //     next.f
-            // } else if (next.f + next.g) <= top {
-            //     if (next.f + next.g + 0.001) >= top {
-            //         top
-            //     } else {
-            //         // let mut temp: RadixHeapMap<Reverse<NotNan<f32>>, SearchNode> =
-            //         //     RadixHeapMap::new_at(
-            //         //         #[allow(unsafe_code)]
-            //         //         unsafe {
-            //         //             Reverse(NotNan::new_unchecked(next.f + next.g))
-            //         //         },
-            //         //     );
-            //         // temp.extend(self.queue.iter().cloned());
-            //         // self.queue = temp;
-
-            //         // next.f + next.g
-            //         // self.queue.iter().for_each(|asdf| {
-            //         //     temp.push(asdf.0, asdf.1.clone());
-            //         // });
-            //         // for key in self.queue.keys() {
-            //         //     println!("{:?}", key);
-            //         // }
-            //         // println!("{:?}", self.queue.keys());
-
-            //         panic!(
-            //             "can't add node to radix heap. top: {}, (f, g): ({}, {}), f + g = {}",
-            //             top,
-            //             next.f,
-            //             next.g,
-            //             (next.f + next.g)
-            //         );
-            //     }
-            // } else {
-            //     next.f + next.g
-            // };
-
+        self.queue.extend(self.node_buffer.drain(..).map(|next| {
             #[allow(unsafe_code)]
-            let key = unsafe { Reverse(NotNan::new_unchecked(next.f)) };
-            self.queue.push(key, next);
-        }
-        // });
-
-        // self.queue.extend(self.node_buffer.drain(..).map(|next| {
-        //     let val = if (next.f + next.g) <= top {
-        //         if (next.f + next.g + 0.01) >= top {
-        //             top
-        //         } else {
-        //             panic!(
-        //                 "can't add node to radix heap. top: {}, (f, g): ({}, {}), f + g = {}",
-        //                 top,
-        //                 next.f,
-        //                 next.g,
-        //                 (next.f + next.g)
-        //             );
-        //         }
-        //     } else {
-        //         next.f + next.g
-        //     };
-        //     #[allow(unsafe_code)]
-        //     let g = unsafe { Reverse(NotNan::new_unchecked(val)) };
-        //     (g, next)
-        // }));
+            let f = unsafe { Reverse(NotNan::new_unchecked(next.f)) };
+            (f, next)
+        }));
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
