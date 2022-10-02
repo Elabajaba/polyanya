@@ -23,7 +23,8 @@ hashbrown = { version = "0.12" }
 glam = { version = "0.21.3", features = ["approx"] }
 indexmap = "1.9"
 smallvec = { version = "1.9", features = ["union", "const_generics"] }
-radix-heap = { version = "0.4.2", features = ["ordered-float"] }
+# radix-heap = { version = "0.4.2", features = ["ordered-float"] }
+radix-heap = { git = "https://github.com/Elabajaba/radix-heap.git", branch = "better-msg", features = ["ordered-float"]}
 ordered-float = "2.8.0"
 
 [dev-dependencies]
