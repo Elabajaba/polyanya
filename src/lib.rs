@@ -303,12 +303,15 @@ impl Mesh {
     #[cfg(test)]
     fn successors(&self, node: SearchNode, to: Vec2) -> Vec<SearchNode> {
         use hashbrown::HashMap;
-        use std::collections::BinaryHeap;
+        use ordered_float::NotNan;
+        use radix_heap::RadixHeapMap;
+        use std::cmp::Reverse;
 
         let mut search_instance = SearchInstance {
             #[cfg(feature = "stats")]
             start: Instant::now(),
-            queue: BinaryHeap::new(),
+            #[allow(unsafe_code)]
+            queue: RadixHeapMap::new_at(Reverse(unsafe { NotNan::new_unchecked(0.0) })),
             node_buffer: Vec::new(),
             root_history: HashMap::new(),
             from: Vec2::ZERO,
@@ -331,19 +334,37 @@ impl Mesh {
             fail_fast: -1,
         };
         search_instance.successors(node);
-        search_instance.queue.drain().collect()
+        let temp = search_instance
+            .queue
+            .into_iter()
+            .map(|(_key, val)| val)
+            .collect();
+
+        search_instance.queue = RadixHeapMap::new_at(Reverse(
+            #[allow(unsafe_code)]
+            unsafe {
+                NotNan::new_unchecked(0.0)
+            },
+        ));
+
+        // search_instance.queue.clear();
+        temp
+        // search_instance.queue.drain().collect()
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
     #[cfg(test)]
     fn edges_between(&self, node: &SearchNode) -> Vec<instance::Successor> {
         use hashbrown::HashMap;
-        use std::collections::BinaryHeap;
+        use ordered_float::NotNan;
+        use radix_heap::RadixHeapMap;
+        use std::cmp::Reverse;
 
         let search_instance = SearchInstance {
             #[cfg(feature = "stats")]
             start: Instant::now(),
-            queue: BinaryHeap::new(),
+            #[allow(unsafe_code)]
+            queue: RadixHeapMap::new_at(Reverse(unsafe { NotNan::new_unchecked(0.0) })),
             node_buffer: Vec::new(),
             root_history: HashMap::new(),
             from: Vec2::ZERO,
@@ -496,9 +517,11 @@ impl Eq for SearchNode {}
 impl Ord for SearchNode {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self.f + self.g).total_cmp(&(other.f + other.g)) {
-            Ordering::Less => Ordering::Greater,
+            Ordering::Greater => Ordering::Greater,
+            // Ordering::Less => Ordering::Greater,
             Ordering::Equal => self.f.total_cmp(&other.f),
-            Ordering::Greater => Ordering::Less,
+            // Ordering::Greater => Ordering::Less,
+            Ordering::Less => Ordering::Less,
         }
     }
 }
@@ -785,10 +808,14 @@ mod tests {
             f: 0.0,
             g: from.distance(to),
         };
+        eprintln!("successors ++++++++++++++++++++++++++++++++++++++++++");
         let successors = dbg!(mesh.successors(search_node, to));
+        eprintln!("after successors ==========================================");
         assert_eq!(successors.len(), 2);
+        eprintln!("after len XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 
         assert_eq!(successors[1].root, Vec2::new(11.0, 3.0));
+        eprintln!("after root RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
         assert_eq!(successors[1].f, from.distance(Vec2::new(11.0, 3.0)));
         assert_eq!(
             successors[1].g,
