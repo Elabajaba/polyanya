@@ -486,10 +486,26 @@ impl<'m> SearchInstance<'m> {
         }
 
         self.node_buffer.sort_unstable();
+        let top = self.queue.top().unwrap().0.into_inner();
 
         self.queue.extend(self.node_buffer.drain(..).map(|next| {
+            let val = if next.f == next.g {
+                next.f
+            } else {
+                let val = next.f + next.g;
+                if val <= top {
+                    if val + 0.001 >= top {
+                        top
+                    } else {
+                        panic!("oof rip pls");
+                    }
+                } else {
+                    val
+                }
+            };
+
             #[allow(unsafe_code)]
-            let f = unsafe { Reverse(NotNan::new_unchecked(next.f)) };
+            let f = unsafe { Reverse(NotNan::new_unchecked(val)) };
             (f, next)
         }));
     }
